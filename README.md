@@ -49,7 +49,7 @@ Ejemplo genérico de configuración local:
       "env": {
         "JIRA_BASE_URL": "https://jira.bqeducacion.cc",
         "JIRA_USERNAME": "tu-usuario",
-        "JIRA_PASSWORD": "tu-credencial"
+        "JIRA_PASSWORD": "tu-contraseña"
       }
     }
   }
