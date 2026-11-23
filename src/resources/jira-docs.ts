@@ -79,7 +79,7 @@ Todas las tools usan la instancia configurada en \`JIRA_BASE_URL\`, la API REST 
 - \`edit_issue\`: actualiza fields/update mediante \`PUT /issue/{issueKey}\`; solo debe enviar los campos solicitados.
 - \`assign_issue\`: asigna o desasigna mediante \`PUT /issue/{issueKey}/assignee\`.
 - \`create_issue\`: crea un issue mediante \`POST /issue\`. Requiere \`confirm=true\`.
-- \`create_subtask\`: crea una subtarea con parent mediante \`POST /issue\`. Requiere \`confirm=true\`.
+- \`create_subtask\`: crea una subtarea con parent mediante \`POST /issue\`. Resuelve \`project\` desde el padre y, si no se indica \`issuetype\`, elige un tipo de subtarea válido del proyecto (prioriza \`Technical task\`). Requiere \`confirm=true\`.
 - \`transition_issue\`: ejecuta el ID devuelto por \`get_transitions\` mediante \`POST /issue/{issueKey}/transitions\`. Requiere \`confirm=true\`.
 - \`move_issues_to_active_sprint\`: descubre el sprint activo del tablero y mueve hasta 50 tickets mediante \`POST /rest/agile/1.0/sprint/{sprintId}/issue\`. Requiere \`confirm=true\`; falla si no hay sprint o hay varios activos.
 - \`add_comment\`: añade un comentario mediante \`POST /issue/{issueKey}/comment\`.

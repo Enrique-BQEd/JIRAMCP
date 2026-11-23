@@ -10,12 +10,15 @@ export function result(value: unknown): ToolResult {
 }
 
 export function failure(error: unknown): ToolResult {
-  const message =
-    error instanceof JiraApiError
-      ? `${error.message}${error.status ? ` (HTTP ${error.status})` : ""}`
-      : error instanceof Error
-        ? error.message
-        : String(error);
+  if (error instanceof JiraApiError) {
+    const payload =
+      error.details === undefined
+        ? { message: error.message, status: error.status }
+        : { message: error.message, status: error.status, details: error.details };
+    return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }], isError: true };
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
   return { content: [{ type: "text", text: message }], isError: true };
 }
 

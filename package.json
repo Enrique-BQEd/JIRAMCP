@@ -6,9 +6,16 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "jira-mcp-server": "dist/index.js"
+    "jira-mcp-server": "bin/jira-mcp-server.mjs"
   },
+  "files": [
+    "bin",
+    "dist",
+    "src",
+    "tsconfig.json"
+  ],
   "scripts": {
+    "prepare": "npm run build",
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
@@ -21,17 +28,17 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
+    "@types/node": "^22.15.0",
     "dotenv": "^16.5.0",
     "mammoth": "^1.13.0",
     "pdf-parse": "^2.4.5",
+    "typescript": "^5.8.3",
     "xlsx": "^0.18.5",
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@types/node": "^22.15.0",
     "jszip": "^3.10.2",
     "tsx": "^4.19.0",
-    "typescript": "^5.8.3",
     "vitest": "^3.1.3"
   }
 }

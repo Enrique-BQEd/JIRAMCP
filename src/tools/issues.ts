@@ -34,7 +34,7 @@ export function registerIssueTools(server: McpServer, { jira }: JiraToolDependen
 
   server.tool(
     "create_subtask",
-    "Crea una subtarea bajo un ticket padre.",
+    "Crea una subtarea bajo un ticket padre. Resuelve project desde el padre y elige un issuetype de subtarea válido si no se indica.",
     {
       parentKey: z.string().min(1),
       fields: z.record(z.string(), z.unknown()),

@@ -34,6 +34,32 @@ export class JiraApiError extends Error {
   }
 }
 
+function formatJiraErrorMessage(payload: unknown, status: number, apiLabel = "Jira API"): string {
+  if (typeof payload !== "object" || payload === null) {
+    return `${apiLabel} request failed with status ${status}`;
+  }
+
+  const body = payload as {
+    errorMessages?: unknown;
+    errors?: unknown;
+  };
+  const parts: string[] = [];
+
+  if (Array.isArray(body.errorMessages)) {
+    const messages = body.errorMessages.filter((value): value is string => typeof value === "string" && value.length > 0);
+    if (messages.length) parts.push(messages.join("; "));
+  }
+
+  if (typeof body.errors === "object" && body.errors !== null) {
+    const fieldErrors = Object.entries(body.errors as Record<string, unknown>)
+      .map(([field, error]) => `${field}: ${String(error)}`)
+      .filter((entry) => entry.length > 0);
+    if (fieldErrors.length) parts.push(fieldErrors.join("; "));
+  }
+
+  return parts.join(" | ") || `${apiLabel} request failed with status ${status}`;
+}
+
 export type JiraClientOptions = {
   baseUrl: string;
   username: string;
@@ -81,11 +107,7 @@ export class JiraClient {
         }
       }
       if (!response.ok) {
-        const message =
-          typeof payload === "object" && payload !== null && "errorMessages" in payload
-            ? (payload as { errorMessages?: string[] }).errorMessages?.join("; ")
-            : undefined;
-        throw new JiraApiError(message || `Jira API request failed with status ${response.status}`, response.status, payload);
+        throw new JiraApiError(formatJiraErrorMessage(payload, response.status), response.status, payload);
       }
       return payload as T;
     } catch (error) {
@@ -132,12 +154,8 @@ export class JiraClient {
         }
       }
       if (!response.ok) {
-        const message =
-          typeof payload === "object" && payload !== null && "errorMessages" in payload
-            ? (payload as { errorMessages?: string[] }).errorMessages?.join("; ")
-            : undefined;
         throw new JiraApiError(
-          message || `Jira Agile API request failed with status ${response.status}`,
+          formatJiraErrorMessage(payload, response.status, "Jira Agile API"),
           response.status,
           payload,
         );
@@ -214,8 +232,46 @@ export class JiraClient {
     return this.request("POST", "/issue", { body: { fields } });
   }
 
-  createSubtask(parentKey: string, fields: Record<string, unknown>) {
-    return this.createIssue({ ...fields, issuetype: fields.issuetype ?? { name: "Sub-task" }, parent: { key: parentKey } });
+  async createSubtask(parentKey: string, fields: Record<string, unknown>) {
+    const parent = (await this.getIssue(parentKey, ["project"])) as {
+      fields?: { project?: { key?: string; id?: string } };
+    };
+    const projectKey = parent.fields?.project?.key;
+    const projectId = parent.fields?.project?.id;
+    if (!projectKey && !projectId) {
+      throw new JiraApiError(`Could not resolve project for parent issue ${parentKey}`, 400);
+    }
+
+    const projectField =
+      fields.project ??
+      (projectKey ? { key: projectKey } : { id: projectId });
+
+    let issuetype = fields.issuetype;
+    if (!issuetype) {
+      const project = (await this.getProject(projectKey ?? String(projectId))) as {
+        issueTypes?: Array<{ id: string; name: string; subtask?: boolean }>;
+      };
+      const subtaskTypes = (project.issueTypes ?? []).filter((type) => type.subtask);
+      const preferred =
+        subtaskTypes.find((type) => type.name === "Technical task") ??
+        subtaskTypes.find((type) => type.name === "Sub-task") ??
+        subtaskTypes[0];
+      if (!preferred) {
+        throw new JiraApiError(
+          `Project ${projectKey ?? projectId} has no subtask issue types configured`,
+          400,
+          project.issueTypes,
+        );
+      }
+      issuetype = { id: preferred.id, name: preferred.name };
+    }
+
+    return this.createIssue({
+      ...fields,
+      project: projectField,
+      issuetype,
+      parent: { key: parentKey },
+    });
   }
 
   linkIssues(linkType: string, inwardIssue: string, outwardIssue: string, comment?: string) {
